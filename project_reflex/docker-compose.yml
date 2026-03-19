@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: reflex_client
+    networks:
+      reflex_net:
+        ipv4_address: 10.0.0.10
+    depends_on:
+      - router
+    restart: unless-stopped
+
+  router:
+    build:
+      context: ./router
+      dockerfile: Dockerfile
+    container_name: reflex_router
+    privileged: true
+    cap_add:
+      - NET_ADMIN
+      - SYS_ADMIN
+    volumes:
+      - /lib/modules:/lib/modules:ro
+      - /usr/src:/usr/src:ro
+    networks:
+      reflex_net:
+        ipv4_address: 10.0.0.20
+    depends_on:
+      - device_a
+      - device_b
+    restart: unless-stopped
+
+  device_a:
+    build:
+      context: ./device
+      dockerfile: Dockerfile
+    container_name: reflex_device_a
+    environment:
+      - DEVICE_NAME=Device_A
+      - DEVICE_IP=10.0.0.31
+      - THRESHOLD=5
+    networks:
+      reflex_net:
+        ipv4_address: 10.0.0.31
+    restart: unless-stopped
+
+  device_b:
+    build:
+      context: ./device
+      dockerfile: Dockerfile
+    container_name: reflex_device_b
+    environment:
+      - DEVICE_NAME=Device_B
+      - DEVICE_IP=10.0.0.32
+      - THRESHOLD=20
+    networks:
+      reflex_net:
+        ipv4_address: 10.0.0.32
+    restart: unless-stopped
+
+networks:
+  reflex_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.0.0.0/24
